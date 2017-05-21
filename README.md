@@ -25,7 +25,7 @@ git clone https://github.com/ZedPea/dsp.git && cd dsp
 
 `stack install`
 
-#### Running
+## Running
 
 Either add ~/.local/bin to your path and run `dsp`
 
