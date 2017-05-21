@@ -9,10 +9,10 @@ https://hackage.haskell.org/package/synthesizer-core-0.8.1
 You need stack installed.
 
 ##### Debian based:
-`sudo apt-get install haskell-stack`
+`sudo apt-get install haskell-stack sox libsndfile`
 
 ##### Arch based:
-`sudo pacman -S stack`
+`sudo pacman -S stack sox libsndfile`
 
 Commands should be similar for other distributions.
 
