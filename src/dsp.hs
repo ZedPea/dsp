@@ -34,15 +34,20 @@ main = do
     playEffect' id "Original file..."
 
     -- fade in time, normal volume time, fade out time
-    playEffect' (fadeInOut (numSeconds info 3) (numSeconds info 5) (numSeconds info 3)) "Fade..."
+    playEffect' (fadeInOut (numSeconds info 3) (numSeconds info 5) 
+                (numSeconds info 3)) "Fade..."
 
-    playEffect' (downsample2 (LazySize 8)) "This is apparently a downsample, I must be doing it wrong. It sound funny though..."
+    playEffect' (downsample2 (LazySize 8)) "This is apparently a downsample, I\
+                                           \ must be doing it wrong. It sounds\
+                                           \ funny though..."
 
     playEffect' (amplify 0.1) "Negative amplify..."
 
-    playEffect' (envelope (white $ LazySize 8)) "Splicing with some disgusting white noise..."
+    playEffect' (envelope (white $ LazySize 8)) 
+                "Splicing with some disgusting white noise..."
 
-    playEffect' (take (numSeconds info 11) . Loop.simple (numSeconds info 1) (numSeconds info 3)) "Loop..."
+    playEffect' (take (numSeconds info 11) . Loop.simple (numSeconds info 1)
+                (numSeconds info 3)) "Loop..."
 
     playEffect' reverse "Reversed..."
 
