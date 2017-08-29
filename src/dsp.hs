@@ -4,27 +4,37 @@ inefficient. Some of these sound absolutely disgusting. Might want to turn
 down your volume! -}
 
 import Prelude hiding (readFile, take, reverse)
-import System.Exit
-import Foreign.Storable
-import Text.Printf
-import Control.Monad
-import Sound.Sox.Play
-import Sound.Sox.Option.Format
-import Sound.File.Sndfile
-import Sound.File.Sndfile.Buffer.StorableVector
-import Synthesizer.Generic.Cut
-import Synthesizer.Generic.Filter.NonRecursive
-import Synthesizer.Generic.Filter.Recursive.Comb
-import Synthesizer.Generic.Filter.Delay
-import Synthesizer.Generic.Signal
-import Synthesizer.Generic.Analysis
-import Synthesizer.Generic.Noise
-import Synthesizer.Basic.Distortion
-import qualified Synthesizer.Generic.Loop as Loop
-import qualified Synthesizer.Generic.Displacement as Distort
-import qualified Control.Concurrent.Thread.Delay as Delay
-import qualified Data.StorableVector as V
-import qualified Data.StorableVector.Lazy as LazyV
+import Control.Concurrent (threadDelay)
+import System.Exit (ExitCode)
+import Foreign.Storable (Storable)
+import Text.Printf (printf)
+import Control.Monad (void)
+import Sound.Sox.Play (simple)
+import Sound.Sox.Option.Format (numberOfChannels)
+
+import Sound.File.Sndfile (Info, readFile, frames, samplerate, channels, 
+                           sections, duration)
+
+import Sound.File.Sndfile.Buffer.StorableVector (fromBuffer)
+import Synthesizer.Generic.Cut (Transform)
+
+import Synthesizer.Generic.Filter.NonRecursive (downsample, fadeInOut, amplify,
+                                                downsample2, envelope)
+
+import Synthesizer.Generic.Filter.Recursive.Comb (run)
+import Synthesizer.Generic.Filter.Delay (static)
+import Synthesizer.Generic.Signal (LazySize(..), take, mix, append, reverse)
+import Synthesizer.Generic.Analysis (average)
+import Synthesizer.Generic.Noise (white)
+import Synthesizer.Basic.Distortion (powerSigned)
+
+import qualified Synthesizer.Generic.Loop as Loop (fade, simple)
+import qualified Synthesizer.Generic.Displacement as Distort (distort, mixMulti)
+import qualified Data.StorableVector as V (Vector, unpack)
+
+import qualified Data.StorableVector.Lazy as LazyV (Vector(..), hPut, repeat, 
+                                                    defaultChunkSize, map, 
+                                                    minimum, pack)
 
 main :: IO ()
 main = do
@@ -86,8 +96,8 @@ main = do
 
     mapM_ (uncurry playEffect') actions
 
-    {- can't do this with playEffect' because sample rate when playing needs
-    to be decreased so it plays at normal speed -}
+    -- can't do this with playEffect' because sample rate when playing needs
+    -- to be decreased so it plays at normal speed
     void $ putStrLn "Downsample..." >> downSample 16 snippet
 
 removeSmallChanges :: (Fractional y, Ord y, Storable y) => LazyV.Vector y
@@ -104,15 +114,15 @@ eightbit file = LazyV.map (\x -> (fromIntegral x / 16) - min') ints
           normalized = LazyV.map (+ min') file
           min' = LazyV.minimum file
 
-{- this is bad - it's inefficent as hell, and there's got to be a better
-way! fromBuffer returns a Data.StorableVector, but play wants a
-Data.StorableVector.Lazy. For now this is a quick hack, but if performance
-starts being needed, you should definitely fix this -}
+-- this is bad - it's inefficent as hell, and there's got to be a better
+-- way! fromBuffer returns a Data.StorableVector, but play wants a
+-- Data.StorableVector.Lazy. For now this is a quick hack, but if performance
+-- starts being needed, you should definitely fix this
 toLazy :: (Storable a) => V.Vector a -> LazyV.Vector a
 toLazy xs = LazyV.pack LazyV.defaultChunkSize $ V.unpack xs
 
-{- need to set sample rate to sample rate * numchannels - plays in half speed
-otherwise. I guess sample rate is per channel? -}
+-- need to set sample rate to sample rate * numchannels - plays in half speed
+-- otherwise. I guess sample rate is per channel?
 play :: LazyV.Vector Double -> Info -> IO ExitCode
 play file info = simple LazyV.hPut (numberOfChannels numChannels)
                                    (samplerate info * numChannels) file
@@ -126,7 +136,7 @@ playEffect :: t -> (t -> LazyV.Vector Double) -> String -> Info -> IO ()
 playEffect signal f msg info = do
     putStrLn msg
     void $ play (f signal) info
-    Delay.delay oneSecond
+    threadDelay oneSecond
     where oneSecond = 1000000
 
 reverse' :: Synthesizer.Generic.Cut.Transform t => Info -> t -> t
